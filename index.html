@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameStore - Top Up Instant</title>
+    <!-- Tailwind untuk Desain, Alpine.js untuk Mesin/Logika -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #0f172a; color: white; }
+    </style>
+</head>
+<body x-data="topupSystem()">
+
+    <!-- Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-blue-500">GAME<span class="text-white">STORE</span></h1>
+            <div class="text-xs bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/50">Sistem Online</div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+        
+        <!-- Bagian 1: Data Akun -->
+        <section class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+            <div class="flex items-center mb-4">
+                <span class="bg-blue-600 w-8 h-8 flex items-center justify-center rounded-full mr-3 font-bold">1</span>
+                <h2 class="text-lg font-semibold">Lengkapi Data Akun</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">User ID</label>
+                    <input type="number" x-model="userId" placeholder="12345678" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 focus:border-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Zone ID</label>
+                    <input type="number" x-model="zoneId" placeholder="(1234)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 focus:border-blue-500 outline-none transition">
+                </div>
+            </div>
+        </section>
+
+        <!-- Bagian 2: Pilih Layanan -->
+        <section class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+            <div class="flex items-center mb-4">
+                <span class="bg-blue-600 w-8 h-8 flex items-center justify-center rounded-full mr-3 font-bold">2</span>
+                <h2 class="text-lg font-semibold">Pilih Nominal Diamond</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <template x-for="item in items" :key="item.id">
+                    <button @click="selectedItem = item" 
+                        :class="selectedItem.id === item.id ? 'border-blue-500 bg-blue-600/10' : 'border-gray-600 bg-gray-900'"
+                        class="p-4 border rounded-xl text-left hover:border-blue-400 transition relative overflow-hidden">
+                        <div x-show="selectedItem.id === item.id" class="absolute top-0 right-0 bg-blue-500 text-[10px] px-2 py-1 rounded-bl-lg">Terpilih</div>
+                        <p class="font-bold text-sm" x-text="item.name"></p>
+                        <p class="text-blue-400 text-xs mt-1" x-text="'Rp ' + item.price.toLocaleString()"></p>
+                    </button>
+                </template>
+            </div>
+        </section>
+
+        <!-- Bagian 3: Metode Pembayaran -->
+        <section class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+            <div class="flex items-center mb-4">
+                <span class="bg-blue-600 w-8 h-8 flex items-center justify-center rounded-full mr-3 font-bold">3</span>
+                <h2 class="text-lg font-semibold">Metode Pembayaran</h2>
+            </div>
+            <div class="space-y-3">
+                <template x-for="pay in payments" :key="pay.id">
+                    <div @click="selectedPay = pay" 
+                        :class="selectedPay.id === pay.id ? 'border-blue-500 bg-blue-600/10' : 'border-gray-600 bg-gray-900'"
+                        class="p-4 border rounded-xl flex justify-between items-center cursor-pointer transition">
+                        <span class="font-medium text-sm" x-text="pay.name"></span>
+                        <span class="text-xs text-gray-400" x-text="selectedItem.price ? 'Estimasi: Rp ' + selectedItem.price.toLocaleString() : 'Pilih Item'"></span>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- Tombol Aksi -->
+        <div class="pb-10">
+            <button @click="processOrder()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transform active:scale-95 transition">
+                Beli Sekarang
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal Konfirmasi (Popup) -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-center mb-4">Konfirmasi Pesanan</h3>
+            <div class="space-y-2 text-sm border-y border-gray-700 py-4 my-4">
+                <div class="flex justify-between"><span class="text-gray-400">ID Akun:</span> <span x-text="userId + ' (' + zoneId + ')'"></span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Item:</span> <span x-text="selectedItem.name"></span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Metode:</span> <span x-text="selectedPay.name"></span></div>
+                <div class="flex justify-between text-lg font-bold mt-2 font-mono text-blue-400"><span>Total:</span> <span x-text="'Rp ' + selectedItem.price?.toLocaleString()"></span></div>
+            </div>
+            <div class="flex gap-3">
+                <button @click="showModal = false" class="flex-1 bg-gray-700 py-3 rounded-xl font-semibold">Batal</button>
+                <button @click="finalStep()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold">Bayar Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function topupSystem() {
+            return {
+                userId: '',
+                zoneId: '',
+                showModal: false,
+                selectedItem: {},
+                selectedPay: {},
+                items: [
+                    { id: 1, name: '86 Diamonds', price: 21500 },
+                    { id: 2, name: '172 Diamonds', price: 42000 },
+                    { id: 3, name: '257 Diamonds', price: 63000 },
+                    { id: 4, name: '344 Diamonds', price: 84500 },
+                    { id: 5, name: '706 Diamonds', price: 165000 },
+                    { id: 6, name: 'Starlight Member', price: 85000 },
+                ],
+                payments: [
+                    { id: 'qris', name: 'QRIS (Gopay/Dana/OVO)' },
+                    { id: 'va', name: 'Virtual Account (BCA/Mandiri)' }
+                ],
+                processOrder() {
+                    if(!this.userId || !this.zoneId || !this.selectedItem.id || !this.selectedPay.id) {
+                        alert('Mohon lengkapi semua data dan pilihan!');
+                        return;
+                    }
+                    this.showModal = true;
+                },
+                finalStep() {
+    let pesan = `Halo Admin, saya ingin beli *${this.selectedItem.name}*%0A%0A` +
+                `ID: ${this.userId} (${this.zoneId})%0A` +
+                `Metode: ${this.selectedPay.name}%0A` +
+                `Total: Rp ${this.selectedItem.price}`;
+    
+    window.location.href = `https://wa.me/6282130686551?text=${pesan}`;
+}
